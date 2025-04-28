@@ -1,3 +1,4 @@
 export class CreateGroupDto {
-  groupId: string;
+  name: string;
+  groupname: string
 }

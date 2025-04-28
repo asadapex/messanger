@@ -1,30 +1,52 @@
 import { Injectable } from '@nestjs/common';
 import { CreateGroupDto } from './dto/create-group.dto';
-import { UpdateGroupDto } from './dto/update-group.dto';
 import { Request } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { JoinGroupDto } from './dto/join-group.dto';
+import { GroupMessage } from '@prisma/client';
 
 @Injectable()
 export class GroupService {
   constructor(private readonly prisma: PrismaService) {}
-  async create(createGroupDto: CreateGroupDto, req: Request) {
-    const newJoin = await this.prisma.group.create({ data: createGroupDto });
-    return;
+
+  async create(data: CreateGroupDto, req: Request) {
+    const newGr = await this.prisma.group.create({ data });
+    return newGr;
   }
 
-  findAll() {
-    return `This action returns all group`;
+  async joinGr(data: JoinGroupDto, req: Request) {
+    const newJoin = await this.prisma.user.update({
+      where: { id: req['user-id'] },
+      data: {
+        groups: { connect: { id: data.groupId } },
+      },
+    });
+    return newJoin;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} group`;
+  async findAll(req: Request) {
+    const all = await this.prisma.user.findMany({
+      where: {
+        groups: {
+          some: {
+            users: {
+              some: {
+                id: req['user-id'],
+              },
+            },
+          },
+        },
+      },
+    });
+    return all;
   }
 
-  update(id: number, updateGroupDto: UpdateGroupDto) {
-    return `This action updates a #${id} group`;
-  }
+  async grMessage(data: GroupMessage, req: Request) {
+    const newMessage = await this.prisma.groupMessage.create({
+      data: { ...data, fromId: req['user-id'] },
+      include: { group: true, from: true },
+    });
 
-  remove(id: number) {
-    return `This action removes a #${id} group`;
+    return newMessage;
   }
 }
